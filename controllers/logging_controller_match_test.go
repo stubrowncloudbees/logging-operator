@@ -16,17 +16,11 @@ package controllers_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
-	"time"
 
-	"emperror.dev/errors"
 	"github.com/banzaicloud/logging-operator/pkg/sdk/api/v1beta1"
-	"github.com/banzaicloud/logging-operator/pkg/sdk/model/output"
 	"github.com/banzaicloud/operator-tools/pkg/utils"
-	"github.com/pborman/uuid"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestInvalidFlowIfMatchAndSelectorBothSet(t *testing.T) {
@@ -187,49 +181,4 @@ func TestInvalidClusterFlowIfMatchAndSelectorBothSet(t *testing.T) {
 	)
 
 	expectError(t, expected)
-}
-
-func expectError(t *testing.T, expected string) {
-	err := wait.Poll(time.Second, time.Second*3, func() (bool, error) {
-		select {
-		case err := <-reconcilerErrors:
-
-			if !strings.Contains(err.Error(), expected) {
-				return false, errors.Errorf("expected `%s` but received `%s`", expected, err.Error())
-			} else {
-				return true, nil
-			}
-		case <-time.After(100 * time.Millisecond):
-			return false, nil
-		}
-	})
-	if err != nil {
-		t.Fatalf("%+v", err)
-	}
-}
-
-func testOutput() *v1beta1.Output {
-	return &v1beta1.Output{
-		ObjectMeta: v1.ObjectMeta{
-			Name:      "test-output",
-			Namespace: testNamespace,
-		},
-		Spec: v1beta1.OutputSpec{
-			NullOutputConfig: output.NewNullOutputConfig(),
-		},
-	}
-}
-
-func testLogging() *v1beta1.Logging {
-	return &v1beta1.Logging{
-		ObjectMeta: v1.ObjectMeta{
-			Name: "test-" + uuid.New()[:8],
-		},
-		Spec: v1beta1.LoggingSpec{
-			WatchNamespaces:         []string{testNamespace},
-			FluentdSpec:             &v1beta1.FluentdSpec{},
-			FlowConfigCheckDisabled: true,
-			ControlNamespace:        controlNamespace,
-		},
-	}
 }
